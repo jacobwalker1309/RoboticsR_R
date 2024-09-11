@@ -1,0 +1,59 @@
+/* CSS for the search card */
+.search-card {
+  width: 350px; /* Adjust the width to make it wider */
+  padding: 30px; /* Increase the padding for more space inside */
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background-color: #ffffff;
+  margin-bottom: 40px; /* Add margin to create space between the search card and results card */
+}
+
+.search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+  max-width: 350px; /* Adjust the max-width accordingly */
+}
+
+.search-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: white; /* Change to white background */
+  color: #003366; /* Change text color to match the others */
+  border-radius: 20px;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  text-transform: none;
+  border: none; /* Remove border */
+}
+
+.search-button:hover {
+  background-color: #f0f0f0; /* Slightly darker on hover, similar to the other buttons */
+}
+
+h2 {
+  font-size: 28px; /* Larger font size for the header */
+  font-weight: bold;
+  text-align: center;
+}
+
+/* CSS for centering the search card and results */
+.search-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 70px; /* Adjust the space above the search card */
+}
+
+.results-card {
+  margin-top: 30px; /* Space between the search card and the results card */
+  width: 100%;
+  max-width: 800px; /* Adjust this width as needed for the results card */
+  padding: 20px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background-color: #ffffff;
+}

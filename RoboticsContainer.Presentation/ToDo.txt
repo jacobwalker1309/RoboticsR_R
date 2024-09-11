@@ -1,0 +1,13 @@
+﻿TO DO
+
+Really need to get some error handling stuff in here for virtually everything
+
+If nothing returns, if certain strings are nullable - basically null checks left right and centre
+
+Need Middleware exception handling too in case anything goes wrong - redirect the user
+
+Need searchability Specification Tree for customization of search functions
+
+Probably need to index the database 
+
+Take some ideas for designing data-intensive applications - need to read through this

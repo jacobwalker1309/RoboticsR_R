@@ -1,0 +1,26 @@
+﻿[
+  {
+    "RuleName": "Allow SQL Server",
+    "Port": "1433",
+    "Protocol": "TCP",
+    "RuleDescription": "Allows inbound SQL Server traffic"
+  },
+  {
+    "RuleName": "Allow NTP Server",
+    "Port": "123",
+    "Protocol": "UDP",
+    "RuleDescription": "Allows inbound NTP traffic"
+  },
+  {
+    "RuleName": "Allow HTTP on 4000",
+    "Port": "4000",
+    "Protocol": "TCP",
+    "RuleDescription": "Allows inbound HTTP traffic on port 4000"
+  },
+  {
+    "RuleName": "Allow HTTPS on 4001",
+    "Port": "4001",
+    "Protocol": "TCP",
+    "RuleDescription": "Allows inbound HTTPS traffic on port 4001"
+  }
+]
