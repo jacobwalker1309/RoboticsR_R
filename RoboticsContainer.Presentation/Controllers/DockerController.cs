@@ -20,7 +20,7 @@ namespace RoboticsContainer.Controllers
         public async Task<IActionResult> RunDockerCompose()
         {
             var result = await _dockerService.RunDockerComposeUp();
-            return Ok(result);
+            return Ok(new { Output = result.Output, Error = result.Error });
         }
 
         [HttpPost("stop")]

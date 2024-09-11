@@ -9,7 +9,7 @@ namespace RoboticsContainer.Infrastructure.Mapper
         public MappingProfile()
         {
             CreateMap<ContainerEntryRequestDTO, ContainerEntry>()
-                .ForMember(dest => dest.DateInserted, opt => opt.Ignore()); // Ignoring DateInserted if not provided
+                .ForMember(dest => dest.DateInserted, opt => opt.Ignore());
         }
     }
 }

@@ -1,9 +1,0 @@
-<div class="upload-area">
-  <h2>Upload Data File</h2>
-  <input type="file" id="fileInput" (change)="onFileSelected($event)" accept=".json,.xml" hidden>
-  <div class="file-drop-area" (click)="triggerFileInput()">
-    <button mat-raised-button color="primary">Choose file</button>
-    <span>{{ selectedFile?.name || 'No file chosen' }}</span>
-  </div>
-  <button mat-raised-button color="primary" [disabled]="!selectedFile" (click)="onMultipleSubmit()">Upload</button>
-</div>

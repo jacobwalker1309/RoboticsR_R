@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using RoboticsContainer.Application.Interfaces;
 using RoboticsContainer.Infrastructure.Configuration;
 using RoboticsContainer.Infrastructure.Extensions;
 
@@ -9,10 +10,12 @@ namespace RoboticsContainer.Infrastructure.Services
     public class SqlContainerTimeService : ISqlContainerTimeService
     {
         private readonly NtpTimeService _ntpTimeService;
+        private readonly ICommandService _commandService;
 
-        public SqlContainerTimeService(NtpTimeService ntpTimeService)
+        public SqlContainerTimeService(NtpTimeService ntpTimeService, ICommandService commandService)
         {
             _ntpTimeService = ntpTimeService;
+            _commandService = commandService;
         }
 
         public async Task SetSqlServerContainerTime()
@@ -32,10 +35,19 @@ namespace RoboticsContainer.Infrastructure.Services
 
         private async Task RunCommandAsync(string containerName, string command)
         {
+            // Format the full Docker exec command
             string fullCommand = $"exec -it {containerName} bash -c \"{command}\"";
-            var result = await ProcessExtensions.ExecuteCommandAsync("docker", fullCommand);
 
+            // Use the ICommandExecutor to run the command
+            var result = await _commandService.ExecuteCommandAsync("docker", fullCommand);
+
+            // Output the result
             Console.WriteLine(result.Output);
+
+            if (!string.IsNullOrEmpty(result.Error))
+            {
+                throw new Exception($"Error executing command in container {containerName}: {result.Error}");
+            }
         }
     }
 }

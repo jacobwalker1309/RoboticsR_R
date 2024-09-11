@@ -1,15 +1,14 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RoboticsContainer.Infrastructure.Data;
 using RoboticsContainer.Core.Models;
-using RoboticsContainer.Services;
 using RoboticsContainer.Core.IRepositories;
 
 namespace RoboticsContainer.Infrastructure.Repositories
 {
     public class ContainerEntryRepository : IContainerEntryRepository
     {
+        // Next work is to check for null within the service for all of these and then do another check for null here too
+        // More error handling
         private readonly AppDbContext _context;
 
         public ContainerEntryRepository(AppDbContext context)

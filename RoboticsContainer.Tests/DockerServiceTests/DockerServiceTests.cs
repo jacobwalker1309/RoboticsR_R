@@ -2,75 +2,98 @@
 using RoboticsContainer.Application.Interfaces;
 using RoboticsContainer.Infrastructure.Services;
 using Xunit;
-using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using Xunit.Abstractions;
 
 public class DockerServiceTests
 {
+    private readonly ITestOutputHelper _output;
+
+    public DockerServiceTests(ITestOutputHelper output)
+    {
+        _output = output;  // Capture output for debugging
+    }
+
     [Fact]
     public async Task RunDockerComposeUp_AllServicesAlreadyRunning_ReturnsMessage()
     {
         // Arrange
         var mockPathService = new Mock<IPathService>();
+        var mockCommandService = new Mock<ICommandService>();
+
         mockPathService
             .Setup(service => service.GetDockerComposeFilePath())
             .Returns(@"C:\projects\DotNet\Robotics\docker-compose.yml");
 
-        var mockDockerService = new Mock<DockerService>(mockPathService.Object)
-        {
-            CallBase = true // Use the real implementation for non-mocked methods
-        };
+        // Mock ExecuteCommandAsync for docker-compose services
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker-compose",
+                $"-f \"{mockPathService.Object.GetDockerComposeFilePath()}\" config --services", true))
+            .ReturnsAsync(("mssql\nredis\nntp-server", ""));
 
         // Mock GetRunningContainers to return all containers
-        mockDockerService
-            .Setup(service => service.GetRunningContainers())
-            .ReturnsAsync(new List<string> { "mssql", "redis", "ntp-server" });
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker", "ps --format \"{{.Names}}\"", true))
+            .ReturnsAsync(("mssql\nredis\nntp-server", ""));
 
-        // Mock GetDockerComposeServices to return the defined services
-        mockDockerService
-            .Setup(service => service.GetDockerComposeServices())
-            .ReturnsAsync(new List<string> { "mssql", "redis", "ntp-server" });
+        // Mock `docker-compose up` to simulate that no services need to be started
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker-compose",
+                It.Is<string>(cmd => cmd.Contains("up --build")), false))
+            .ReturnsAsync(("All services already running.", ""));
+
+        var dockerService = new DockerService(mockPathService.Object, mockCommandService.Object);
 
         // Act
-        var result = await mockDockerService.Object.RunDockerComposeUp();
+        var result = await dockerService.RunDockerComposeUp();
 
         // Assert
-        Assert.Equal("All services are already running.", result.Output);
+        Assert.Equal("All services already running.", result.Output);
         Assert.Equal("", result.Error);
+
+        // Verify `docker-compose up` command was called 0 times (since all services are already running)
+        mockCommandService.Verify(service => service.ExecuteCommandAsync(
+         It.Is<string>(cmd => cmd.Contains("up --build")),
+         It.IsAny<string>(),  // Matches any string passed as the second argument
+         false  // This is correct if your actual method accepts a Boolean for `waitForExit`
+     ), Times.Never);
     }
+
+
 
     [Fact]
     public async Task RunDockerComposeUp_SomeServicesDown_StartsOnlyStoppedServices()
     {
         // Arrange
         var mockPathService = new Mock<IPathService>();
+        var mockCommandService = new Mock<ICommandService>();
+
         mockPathService
             .Setup(service => service.GetDockerComposeFilePath())
             .Returns(@"C:\projects\DotNet\Robotics\docker-compose.yml");
 
-        var mockDockerService = new Mock<DockerService>(mockPathService.Object)
-        {
-            CallBase = true // Use the real implementation for non-mocked methods
-        };
+        // Mock GetRunningContainers to return only "mssql" (meaning "redis" and "ntp-server" are stopped)
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker", "ps --format \"{{.Names}}\"", true))
+            .ReturnsAsync(("mssql", ""));  // Simulating only "mssql" is running
 
-        // Mock GetRunningContainers to return only some running containers
-        mockDockerService
-            .Setup(service => service.GetRunningContainers())
-            .ReturnsAsync(new List<string> { "mssql" });
+        // Mock ExecuteCommandAsync for docker-compose services
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker-compose",
+                $"-f \"{mockPathService.Object.GetDockerComposeFilePath()}\" config --services", true))
+            .ReturnsAsync(("mssql\nredis\nntp-server", ""));  // Simulating defined services
 
-        // Mock GetDockerComposeServices to return the defined services
-        mockDockerService
-            .Setup(service => service.GetDockerComposeServices())
-            .ReturnsAsync(new List<string> { "mssql", "redis", "ntp-server" });
+        // Mock ExecuteCommandAsync for "docker-compose up --build"
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker-compose",
+                It.Is<string>(cmd => cmd.Contains("up --build")), false))  // Matching any up command
+            .ReturnsAsync(("Started redis, ntp-server", ""));  // Simulating docker-compose up success
 
-        // Mock RunDockerCommand to simulate starting services
-        mockDockerService
-            .Setup(service => service.RunDockerCommand(It.IsAny<string>(), false))
-            .ReturnsAsync(("Started redis, ntp-server", ""));
+        var dockerService = new DockerService(mockPathService.Object, mockCommandService.Object);
 
         // Act
-        var result = await mockDockerService.Object.RunDockerComposeUp();
+        var result = await dockerService.RunDockerComposeUp();
 
         // Assert
         Assert.Equal("Started redis, ntp-server", result.Output);
@@ -82,97 +105,95 @@ public class DockerServiceTests
     {
         // Arrange
         var mockPathService = new Mock<IPathService>();
+        var mockCommandService = new Mock<ICommandService>();
+
         mockPathService
             .Setup(service => service.GetDockerComposeFilePath())
             .Returns(@"C:\projects\DotNet\Robotics\docker-compose.yml");
 
-        var mockDockerService = new Mock<DockerService>(mockPathService.Object)
-        {
-            CallBase = true // Use the real implementation for non-mocked methods
-        };
-
         // Mock GetRunningContainers to return no running containers
-        mockDockerService
-            .Setup(service => service.GetRunningContainers())
-            .ReturnsAsync(new List<string>());
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker", "ps --format \"{{.Names}}\"", true))
+            .ReturnsAsync(("", ""));  // No running services
 
-        // Mock GetDockerComposeServices to return the defined services
-        mockDockerService
-            .Setup(service => service.GetDockerComposeServices())
-            .ReturnsAsync(new List<string> { "mssql", "redis", "ntp-server" });
+        // Mock ExecuteCommandAsync for docker-compose services
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker-compose",
+                It.Is<string>(cmd => cmd.Contains("config --services")), true))
+            .ReturnsAsync(("mssql\nredis\nntp-server", ""));  // Simulate a successful response with services
 
         // Mock RunDockerCommand to simulate starting all services
-        mockDockerService
-            .Setup(service => service.RunDockerCommand(It.IsAny<string>(), false))
-            .ReturnsAsync(("Started mssql, redis, ntp-server", ""));
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker-compose",
+                It.Is<string>(cmd => cmd.Contains("up --build mssql redis ntp-server")), false))
+            .ReturnsAsync(("Started mssql, redis, ntp-server", ""));  // Simulate the service start
+
+        var dockerService = new DockerService(mockPathService.Object, mockCommandService.Object);
 
         // Act
-        var result = await mockDockerService.Object.RunDockerComposeUp();
+        var result = await dockerService.RunDockerComposeUp();
 
         // Assert
         Assert.Equal("Started mssql, redis, ntp-server", result.Output);
         Assert.Equal("", result.Error);
     }
 
+
     [Fact]
     public async Task RunDockerComposeUp_RetriesOnFailure()
     {
         // Arrange
         var mockPathService = new Mock<IPathService>();
+        var mockCommandService = new Mock<ICommandService>();
+
         mockPathService
             .Setup(service => service.GetDockerComposeFilePath())
             .Returns(@"C:\projects\DotNet\Robotics\docker-compose.yml");
 
         var retryCount = 0;
 
-        // Mock DockerService and use CallBase to ensure non-overridden methods use the base class implementation
-        var mockDockerService = new Mock<DockerService>(mockPathService.Object)
-        {
-            CallBase = true // Ensure the base methods are called for non-mocked methods
-        };
+        // Mock GetRunningContainers to return no running containers
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker", "ps --format \"{{.Names}}\"", true))
+            .ReturnsAsync(("", ""));  // No running services
 
-        // Mock GetRunningContainers to simulate that no services are running
-        mockDockerService
-            .Setup(service => service.GetRunningContainers())
-            .ReturnsAsync(new List<string>());  // No running services
+        // Mock ExecuteCommandAsync for docker-compose services
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker-compose",
+                $"-f \"{mockPathService.Object.GetDockerComposeFilePath()}\" config --services", true))
+            .ReturnsAsync(("mssql\nredis\nntp-server", ""));  // Defined services
 
-        // Mock GetDockerComposeServices to return all defined services
-        mockDockerService
-            .Setup(service => service.GetDockerComposeServices())
-            .ReturnsAsync(new List<string> { "mssql", "redis", "ntp-server" });  // Define 3 services
-
-        // Mock the RunDockerCommand method to simulate failures and eventual success
-        mockDockerService
-            .Setup(service => service.RunDockerCommand(It.IsAny<string>(), false))
+        // Mock ExecuteCommandAsync for starting services, simulating retries
+        mockCommandService
+            .Setup(service => service.ExecuteCommandAsync("docker-compose",
+                It.Is<string>(cmd => cmd.Contains("up --build mssql redis ntp-server")), false))
             .ReturnsAsync(() =>
             {
                 retryCount++;
                 if (retryCount < 3)
                 {
-                    throw new Exception("Temporary failure");  // Throwing exception to trigger Polly
+                    throw new Exception("Temporary failure");  // Simulate failure
                 }
                 return ("Success", "");  // Simulate success after retries
             });
 
+        var dockerService = new DockerService(mockPathService.Object, mockCommandService.Object);
+
         // Act
-
-        (string Output, string Error) result = (string.Empty, string.Empty);
-
-        try
-        {
-            result = await mockDockerService.Object.RunDockerComposeUp();
-        }
-        catch (Exception ex)
-        {
-            Assert.True(false, $"Test failed with exception: {ex.Message}");
-        }
+        var result = await dockerService.RunDockerComposeUp();
 
         // Assert
         Assert.Equal("Success", result.Output);  // Expect success after retries
         Assert.Equal(3, retryCount);  // Ensure it retried 3 times before succeeding
 
-        // Verify that RunDockerCommand was called the expected number of times
-        mockDockerService.Verify(service => service.RunDockerCommand(It.IsAny<string>(), false), Times.Exactly(3));
+        // Verify that ExecuteCommandAsync was called 3 times
+        mockCommandService.Verify(service => service.ExecuteCommandAsync("docker-compose",
+            It.Is<string>(cmd => cmd.Contains("up --build mssql redis ntp-server")), false),
+            Times.Exactly(3));
     }
+
+
+
+
 
 }

@@ -38,8 +38,6 @@ public class PathService : IPathService
         return currentDirectory;
     }
 
-
-
     public string GetDockerComposeFilePath()
     {
         var rootPath = GetProjectRoot();
@@ -51,7 +49,7 @@ public class PathService : IPathService
         var projectRoot = GetProjectRoot();
         var filePath = Path.Combine(projectRoot, "RoboticsContainer.Infrastructure", "Firewall", "Rules", "FirewallRules.json");
 
-        // Normalize the path (optional but recommended)
+        // Normalize the path
         filePath = Path.GetFullPath(filePath);
 
         return filePath;

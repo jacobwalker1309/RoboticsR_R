@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
-using RoboticsContainer.Infrastructure.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
 using RoboticsContainer.Core.Models;
 
 namespace RoboticsContainer.Infrastructure.Data
@@ -17,8 +15,6 @@ namespace RoboticsContainer.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-
-            // Apply role and user role configurations
 
             // Other configurations (e.g., for ContainerEntry)
             builder.Entity<ContainerEntry>(entity =>

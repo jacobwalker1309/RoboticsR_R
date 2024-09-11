@@ -1,10 +1,9 @@
-﻿namespace RoboticsContainer.Infrastructure.Services
-{
-    using Microsoft.Extensions.Caching.Distributed;
-    using RoboticsContainer.Application.Interfaces;
-    using StackExchange.Redis;
-    using System.Text.Json;
+﻿using Microsoft.Extensions.Caching.Distributed;
+using RoboticsContainer.Application.Interfaces;
+using System.Text.Json;
 
+namespace RoboticsContainer.Infrastructure.Services
+{
     public class DistributedCacheService : ICacheService
     {
         private readonly IDistributedCache _distributedCache;

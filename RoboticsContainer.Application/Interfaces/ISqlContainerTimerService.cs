@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace RoboticsContainer.Infrastructure.Services
+﻿namespace RoboticsContainer.Infrastructure.Services
 {
     public interface ISqlContainerTimeService
     {

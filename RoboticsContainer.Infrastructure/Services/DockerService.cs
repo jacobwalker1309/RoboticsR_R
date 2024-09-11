@@ -1,38 +1,49 @@
-﻿using RoboticsContainer.Application.Interfaces;
-using System.Diagnostics;
-using System.Text;
-using Polly;
-using RoboticsContainer.Infrastructure.Extensions;
+﻿using Polly;
+using RoboticsContainer.Application.Interfaces;
 
-namespace RoboticsContainer.Infrastructure.Services
+public class DockerService : IDockerService
 {
-    public class DockerService : IDockerService
+    private readonly string _dockerComposeFilePath;
+    private readonly IAsyncPolicy<(string Output, string Error)> _retryPolicy;
+    private readonly ICommandService _commandService;
+
+    public DockerService(IPathService pathService, ICommandService commandService)
     {
-        private readonly string _dockerComposeFilePath;
-        private readonly IAsyncPolicy<(string Output, string Error)> _retryPolicy;
+        _dockerComposeFilePath = pathService.GetDockerComposeFilePath();
+        _commandService = commandService;
 
-        public DockerService(IPathService pathService)
-        {
-            _dockerComposeFilePath = pathService.GetDockerComposeFilePath();
-            Console.WriteLine("Beginning of Docker Service Process");
+        // Define a simple retry policy with Polly (retry 3 times with a 2-second delay)
+        _retryPolicy = Policy<(string Output, string Error)>
+            .Handle<Exception>()
+            .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(2),
+                (result, timeSpan, retryCount, context) =>
+                {
+                    Console.WriteLine($"Retry {retryCount} for Docker command.");
+                });
+    }
 
-            // Define a simple retry policy with Polly (retry 3 times with a 2-second delay)
-            _retryPolicy = Policy<(string Output, string Error)>
-                .Handle<Exception>()
-                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(2),
-                    (result, timeSpan, retryCount, context) =>
-                    {
-                        // Log each retry
-                        Console.WriteLine($"Retry {retryCount} for Docker command.");
-                    });
-        }
-
-        public virtual async Task<(string Output, string Error)> RunDockerComposeUp()
+    public virtual async Task<(string Output, string Error)> RunDockerComposeUp()
+    {
+        try
         {
             Console.WriteLine("Checking for running containers...");
             var runningContainers = await GetRunningContainers();
-            var definedServices = await GetDockerComposeServices();
+            Console.WriteLine($"Running Containers: {string.Join(", ", runningContainers)}");
 
+            var (servicesOutput, error) = await _commandService.ExecuteCommandAsync(
+                "docker-compose",
+                $"-f \"{_dockerComposeFilePath}\" config --services"
+            );
+
+            if (!string.IsNullOrEmpty(error))
+            {
+                throw new Exception($"Failed to get docker-compose services: {error}");
+            }
+
+            var definedServices = servicesOutput
+            .Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(service => service.Trim())  // Ensure no extra spaces
+            .ToList();
             var stoppedServices = definedServices.Except(runningContainers).ToList();
 
             if (!stoppedServices.Any())
@@ -41,103 +52,56 @@ namespace RoboticsContainer.Infrastructure.Services
                 return ("All services are already running.", "");
             }
 
-            Console.WriteLine($"Starting the following services: {string.Join(", ", stoppedServices)}");
             var servicesArg = string.Join(" ", stoppedServices);
 
-            // Do not wait for the process to exit because docker-compose up is long-running
-
+            // Wrapping the `docker-compose up` command in Polly retry logic
             return await _retryPolicy.ExecuteAsync(async () =>
             {
+                var (upOutput, upError) = await _commandService.ExecuteCommandAsync(
+                    "docker-compose",
+                    $"up --build {servicesArg}",
+                    waitForExit: false
+                );
 
-                return await RunDockerCommand($"up --build {servicesArg}", waitForExit: false);
+                Console.WriteLine($"Up Output: {upOutput}, Up Error: {upError}");
 
+                if (!string.IsNullOrEmpty(upError))
+                {
+                    throw new Exception($"Docker Compose up command failed: {upError}");
+                }
+
+                return (upOutput, upError);
             });
         }
-
-        public virtual async Task<(string Output, string Error)> RunDockerComposeDown()
+        catch (Exception ex)
         {
-            Console.WriteLine("Running docker-compose down...");
-            // Wait for the process to exit since docker-compose down should finish
-            return await RunDockerCommand("down", waitForExit: true);
+            Console.WriteLine($"An error occurred: {ex.Message}");
+            return (null, $"Exception: {ex.Message}");
+        }
+    }
+
+    public virtual async Task<(string Output, string Error)> RunDockerComposeDown()
+    {
+        Console.WriteLine("Running docker-compose down...");
+        return await _commandService.ExecuteCommandAsync(
+            "docker-compose",
+            "down",
+            waitForExit: true
+        );
+    }
+
+    public virtual async Task<List<string>> GetRunningContainers()
+    {
+        var (output, error) = await _commandService.ExecuteCommandAsync(
+            "docker",
+            "ps --format \"{{.Names}}\""
+        );
+
+        if (!string.IsNullOrEmpty(error))
+        {
+            throw new Exception($"Failed to get running containers: {error}");
         }
 
-        // Check which containers are running
-        public virtual async Task<List<string>> GetRunningContainers()
-        {
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = "docker",
-                Arguments = "ps --format \"{{.Names}}\"", // Get the names of running containers
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            var process = new Process
-            {
-                StartInfo = processStartInfo
-            };
-
-            var output = new StringBuilder();
-
-            process.OutputDataReceived += (sender, args) =>
-            {
-                if (!string.IsNullOrEmpty(args.Data))
-                {
-                    output.AppendLine(args.Data);
-                }
-            };
-
-            process.Start();
-            process.BeginOutputReadLine();
-            await process.WaitForExitAsync();
-
-            return output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
-        }
-
-        // Get the services defined in docker-compose.yml
-        public virtual async Task<List<string>> GetDockerComposeServices()
-        {
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = "docker-compose",
-                Arguments = $"-f \"{_dockerComposeFilePath}\" config --services", // List services in docker-compose.yml
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            var process = new Process
-            {
-                StartInfo = processStartInfo
-            };
-
-            var output = new StringBuilder();
-
-            process.OutputDataReceived += (sender, args) =>
-            {
-                if (!string.IsNullOrEmpty(args.Data))
-                {
-                    output.AppendLine(args.Data);
-                }
-            };
-
-            process.Start();
-            process.BeginOutputReadLine();
-            await process.WaitForExitAsync();
-
-            return output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
-        }
-
-        public virtual async Task<(string Output, string Error)> RunDockerCommand(string command, bool waitForExit = true)
-        {
-            return await _retryPolicy.ExecuteAsync(async () =>
-            {
-                Console.WriteLine($"Executing Docker Command: {command}");
-
-                // Use the extension method to execute the docker command
-                return await ProcessExtensions.ExecuteCommandAsync("docker-compose", $"-f \"{_dockerComposeFilePath}\" {command}", waitForExit);
-            });
-        }
+        return output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
     }
 }

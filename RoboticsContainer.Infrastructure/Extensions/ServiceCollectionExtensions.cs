@@ -3,8 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RoboticsContainer.Application.Interfaces;
 using RoboticsContainer.Core.IRepositories;
-using RoboticsContainer.Infrastructure.Configuration;
 using RoboticsContainer.Infrastructure.Data;
+using RoboticsContainer.Infrastructure.Extensions;
 using RoboticsContainer.Infrastructure.Mapper;
 using RoboticsContainer.Infrastructure.Repositories;
 using RoboticsContainer.Infrastructure.Services;
@@ -22,12 +22,13 @@ public static class ServiceCollectionExtensions
 
         // Add custom services
         services.AddSingleton<IPathService, PathService>();
+        services.AddSingleton<ICommandService,CommandService>();
         services.AddScoped<NtpTimeService>();
         services.AddScoped<IContainerEntryRepository, ContainerEntryRepository>();
         services.AddScoped<IContainerEntryService, ContainerEntryService>();
-        services.AddScoped<IFirewallService, FirewallService>();
         services.AddSingleton<IDockerService, DockerService>();
         services.AddAutoMapper(typeof(MappingProfile));
+        
 
         // Redis connection
         services.AddSingleton<IConnectionMultiplexer>(sp =>
