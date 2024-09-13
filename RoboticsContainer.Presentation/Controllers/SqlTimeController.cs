@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RoboticsContainer.Infrastructure.Services;
-using System.Threading.Tasks;
 
 namespace RoboticsContainer.Controllers
 {

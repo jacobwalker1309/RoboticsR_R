@@ -1,6 +1,7 @@
 services:
 
   mssql:
+    user: root
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: mssql
     environment:
@@ -9,49 +10,26 @@ services:
       MSSQL_PID: "Developer"
       MSSQL_TCP_PORT: 1433
     ports:
-      - "1433:1433"  # Expose only if necessary (e.g., for external connections)
+      - "1433:1433"
     volumes:
       - ./RoboticsContainer.Infrastructure/Docker/SqlConfiguration/sql-scripts:/sql-scripts
       - ./RoboticsContainer.Infrastructure/Docker/SqlConfiguration/data:/var/opt/mssql/data
       - ./RoboticsContainer.Infrastructure/Docker/SqlConfiguration/log:/var/opt/mssql/log
       - ./RoboticsContainer.Infrastructure/Docker/SqlConfiguration/secrets:/var/opt/mssql/secrets
-    entrypoint:
-      - /bin/bash
-      - -c
-      - |
-        echo "Listing permissions of /sql-scripts/init.sql"; \
-        ls -l /sql-scripts/init.sql; \
-        echo "Starting SQL Server..."; \
-        /opt/mssql/bin/sqlservr & \
-        echo "Waiting for SQL Server to start..."; \
-        sleep 40; \
-        echo "Running initialization script..."; \
-        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Admin@123' -d master -i /sql-scripts/init.sql -C; \
-        wait
     restart: unless-stopped
-    networks:
-      - backend
 
   ntp-server:
     build:
       context: ./RoboticsContainer.Infrastructure/Docker/NtpConfiguration
     container_name: ntp-server
     ports:
-      - "123:123/udp"  # Expose only if NTP needs to be accessed from outside
+      - "123:123/udp"
     restart: unless-stopped
-    networks:
-      - backend
 
   redis:
     build:
       context: ./RoboticsContainer.Infrastructure/Docker/RedisConfiguration
     container_name: redis
     ports:
-      - "6379:6379"  # Expose only if Redis needs to be accessed externally
+      - "6379:6379"
     restart: unless-stopped
-    networks:
-      - backend
-
-networks:
-  backend:
-    driver: bridge

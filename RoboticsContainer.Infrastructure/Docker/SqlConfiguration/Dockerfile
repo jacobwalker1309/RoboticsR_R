@@ -35,5 +35,5 @@ ADD ./sql-scripts/ /sql-scripts/
 # Ensure that the script and directory are executable and readable
 RUN chmod -R 755 /sql-scripts
 
-# Start SQL Server and run the initialization script
-CMD /bin/bash -c "/opt/mssql/bin/sqlservr & sleep 40 && sqlcmd -S localhost -U sa -P 'Admin@123' -d master -i /sql-scripts/init.sql -C && wait"
+# Start SQL Server and run the initialization script with SSL flag
+CMD /bin/bash -c "/opt/mssql/bin/sqlservr & sleep 40 && /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Admin@123' -d master -i /sql-scripts/init.sql -C && wait"

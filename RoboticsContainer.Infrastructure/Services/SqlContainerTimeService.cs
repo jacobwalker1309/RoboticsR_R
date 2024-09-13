@@ -1,9 +1,5 @@
-﻿using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using RoboticsContainer.Application.Interfaces;
+﻿using RoboticsContainer.Application.Interfaces;
 using RoboticsContainer.Infrastructure.Configuration;
-using RoboticsContainer.Infrastructure.Extensions;
 
 namespace RoboticsContainer.Infrastructure.Services
 {
