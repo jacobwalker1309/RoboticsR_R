@@ -1,0 +1,17 @@
+.add-container-card {
+  max-width: 500px; /* Match the width of the inner container */
+  margin: auto; /* Center the card on the page */
+  padding: 30px 20px; /* Increase padding at the top and bottom for more space */
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center the contents horizontally */
+  margin-top: 15vh; /* Adjust margin-top to add more space above the form */
+}
+
+app-toggle-switch {
+  display: flex;
+  justify-content: center; /* Center the toggle switch */
+  margin-top: 50px; /* Increase the space between the form and the toggle switch */
+}

@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Hosting;
+using System.Text;
+using RoboticsContainer.Presentation.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -69,6 +71,8 @@ app.UseStaticFiles();
 app.UseCors("AllowSpecificOrigin"); // Apply CORS middleware
 
 app.UseRouting();
+
+app.UseMiddleware<RedirectToAuthMiddleware>();
 
 app.UseAuthentication(); // Ensure this is before UseAuthorization
 

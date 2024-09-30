@@ -1,0 +1,6 @@
+<div class="toggle-container">
+  <mat-button-toggle-group [(ngModel)]="isLeftActive" (change)="onToggleChange($event)">
+    <mat-button-toggle [value]="true">{{ leftLabel }}</mat-button-toggle>
+    <mat-button-toggle [value]="false">{{ rightLabel }}</mat-button-toggle>
+  </mat-button-toggle-group>
+</div>
