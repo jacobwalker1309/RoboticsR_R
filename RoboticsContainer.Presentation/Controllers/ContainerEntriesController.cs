@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RoboticsContainer.Application.DTOs;
 using RoboticsContainer.Application.Interfaces;
 
 namespace RoboticsContainer.Controllers
 {
+    [Authorize(Roles = "Admin,Employee")]
     [ApiController]
     [Route("api/[controller]")]
     [Produces("application/json", "application/xml")]

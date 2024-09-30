@@ -1,21 +1,19 @@
-services:
+version: '3.8'
 
-  mssql:
+services:
+  mysql:
     user: root
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: mssql
+    image: mysql:latest
+    container_name: mysql
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "Admin@123"
-      MSSQL_PID: "Developer"
-      MSSQL_TCP_PORT: 1433
+      MYSQL_ROOT_PASSWORD: "Admin@123"
+      MYSQL_DATABASE: "TestDB"
     ports:
-      - "1433:1433"
+      - "3306:3306"
     volumes:
-      - ./RoboticsContainer.Infrastructure/Docker/SqlConfiguration/sql-scripts:/sql-scripts
-      - ./RoboticsContainer.Infrastructure/Docker/SqlConfiguration/data:/var/opt/mssql/data
-      - ./RoboticsContainer.Infrastructure/Docker/SqlConfiguration/log:/var/opt/mssql/log
-      - ./RoboticsContainer.Infrastructure/Docker/SqlConfiguration/secrets:/var/opt/mssql/secrets
+      - ./RoboticsContainer.Infrastructure/Docker/SqlConfiguration/sql-scripts:/docker-entrypoint-initdb.d/
+      # Store the MySQL data outside of your project folder to avoid conflicts
+      - mysql_data:/var/lib/mysql
     restart: unless-stopped
 
   ntp-server:
@@ -33,3 +31,7 @@ services:
     ports:
       - "6379:6379"
     restart: unless-stopped
+
+volumes:
+  mysql_data:
+    driver: local

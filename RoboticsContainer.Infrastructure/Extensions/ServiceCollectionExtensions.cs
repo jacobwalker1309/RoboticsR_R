@@ -17,8 +17,10 @@ public static class ServiceCollectionExtensions
     {
         // Add DbContext
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"),
-                                 sqlServerOptions => sqlServerOptions.EnableRetryOnFailure()));
+        options.UseMySql(configuration.GetConnectionString("DefaultConnection"),
+                     new MySqlServerVersion(new Version(8, 0, 26)), // Replace with your actual MySQL version
+                     mysqlOptions => mysqlOptions.EnableRetryOnFailure()));
+
 
         // Add custom services
         services.AddSingleton<IPathService, PathService>();

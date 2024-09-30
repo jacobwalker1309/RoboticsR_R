@@ -64,7 +64,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
+
 app.UseCors("AllowSpecificOrigin"); // Apply CORS middleware
+
+app.UseRouting();
 
 app.UseAuthentication(); // Ensure this is before UseAuthorization
 
