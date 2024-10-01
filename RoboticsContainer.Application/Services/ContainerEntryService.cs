@@ -5,6 +5,9 @@ using RoboticsContainer.Application.Interfaces;
 using RoboticsContainer.Application.DTOs;
 using RoboticsContainer.Core.IRepositories;
 using RoboticsContainer.Core.Models;
+using RoboticsContainer.Application.Specification.ContainerEntrySpecification;
+using RoboticsContainer.Application.Extensions;
+using static RoboticsContainer.Application.Specification.SpecificationLayoutComponents.SpecificationFilteringOperators;
 
 namespace RoboticsContainer.Services
 {
@@ -164,6 +167,54 @@ namespace RoboticsContainer.Services
 
             memoryStream.Position = 0; // Reset the stream position to the beginning
             return memoryStream;
+        }
+
+        // note to self, this method can be imporved upon via importing a dictionary as a parameter and using reflection 
+        // to grab the variables and then creating specification based on the reflections variable choice
+        // will prevent the need for adding to this method every time container entry is extended
+        // cons - very complex and will take about 2 weeks - a month to get right. 
+
+        public async Task<IEnumerable<ContainerEntry>> GetFilteredEntriesAsync(
+        float? minTemperature, float? maxTemperature,
+        float? minVoltage, float? maxVoltage,
+        float? minCurrent, float? maxCurrent,
+        float? minStateOfCharge, float? maxStateOfCharge,
+        DateTime? minDateInserted, DateTime? maxDateInserted,
+        int? containerId)
+        {
+            ISpecification<ContainerEntry>? spec = new TrueSpecification<ContainerEntry>(); // Base specification
+
+            if (minTemperature.HasValue || maxTemperature.HasValue)
+            {
+                spec = spec.And(new TemperatureSpecification(minTemperature, maxTemperature));
+            }
+
+            if (minVoltage.HasValue || maxVoltage.HasValue)
+            {
+                spec = spec.And(new VoltageSpecification(minVoltage, maxVoltage));
+            }
+
+            if (minCurrent.HasValue || maxCurrent.HasValue)
+            {
+                spec = spec.And(new CurrentSpecification(minCurrent, maxCurrent));
+            }
+
+            if (minStateOfCharge.HasValue || maxStateOfCharge.HasValue)
+            {
+                spec = spec.And(new StateOfChargeSpecification(minStateOfCharge, maxStateOfCharge));
+            }
+
+            if (minDateInserted.HasValue || maxDateInserted.HasValue)
+            {
+                spec = spec.And(new DateInsertedSpecification(minDateInserted, maxDateInserted));
+            }
+
+            if (containerId.HasValue)
+            {
+                spec = spec.And(new ContainerIDSpecification(containerId.Value));
+            }
+
+            return await _repository.FindAsync(spec);
         }
     }
 }

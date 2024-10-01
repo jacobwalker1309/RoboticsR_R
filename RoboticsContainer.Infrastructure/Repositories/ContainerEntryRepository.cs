@@ -2,6 +2,7 @@
 using RoboticsContainer.Infrastructure.Data;
 using RoboticsContainer.Core.Models;
 using RoboticsContainer.Core.IRepositories;
+using RoboticsContainer.Application.Interfaces;
 
 namespace RoboticsContainer.Infrastructure.Repositories
 {
@@ -47,5 +48,13 @@ namespace RoboticsContainer.Infrastructure.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task<IEnumerable<ContainerEntry>> FindAsync(ISpecification<ContainerEntry> specification)
+        {
+            return await _context.ContainerEntries
+                .Where(specification.ToExpression())
+                .ToListAsync();
+        }
+
     }
 }
